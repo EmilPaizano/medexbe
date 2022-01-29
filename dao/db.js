@@ -15,3 +15,23 @@ const initDB = () =>{
         );
     });
 }
+
+
+const singletonGetDB = async ()=>{
+    if(!db){
+        db = await initDB();
+    }
+    return db;
+}
+
+
+const singletonGetDBnoPromise = () => {
+    if(!db){
+        initDB()
+            .then((database)=>{db = database;})
+            .catch((err)=>{throw Error("Error de Database")});
+    }
+    return db;
+}
+
+module.exports = singletonGetDB;
