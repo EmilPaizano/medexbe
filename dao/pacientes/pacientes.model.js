@@ -1,13 +1,15 @@
-const getDb = require("../db");
+const ObjectId = require("mongodb").ObjectId;
+const getDb = require("../mongodb");
 let db = null;
 class Pacientes {
+    collection = null;
     constructor(){
         getDb()
             .then((database)=>{
                 db = database;
+                this.collection = db.collection('Pacientes');
                 if(process.env.MIGRATE === "true"){
-                    const createStatement ="CREATE TABLE IF NOT EXISTS pacientes (id INTEGER PRIMARY KEY AUTOINCREMENT,identidad TEXT, nombres TEXT,apellidos ,email TEXT,telefono TEXT);";
-                    db.run(createStatement);
+                    //por si ocupa algo
                 }
             })
             .catch((err)=>{
@@ -15,82 +17,66 @@ class Pacientes {
             });
     }
 
-    new (nombres,apellidos,identidad,telefono,correo){
-        return new Promise((accept,reject)=>{
-            db.run(
-                'INSERT INTO pacientes (identidad,nombres,apellidos,email,telefono) VALUES(?,?,?,?,?);',
-                [identidad,nombres,apellidos,correo,telefono],
-                (err,rslt)=>{
-                    if(err){
-                        console.error(err);
-                        reject(err);
-                    }else{
-                        accept(rslt)
-                    }
-                }
-            )
-        })
+    //CREACION DE UN NUEVO REGISTRO DE PACIENTE (Ya que mongodb utiliza promesas, las funciones deben ser asincronas)
+    async new (nombres,apellidos,identidad,telefono,correo){
+        const newPaciente = {
+            nombres,
+            apellidos,
+            identidad,
+            telefono,
+            correo
+        };
+        const rlst = await this.collection.insertOne(newPaciente);
+        return rlst;
     }
 
-    getAll (){
-        return new Promise((accept,reject)=>{
-            db.all("SELECT * FROM pacientes",(err,rows)=>{
-                if(err){
-                    console.error(err);
-                    reject(err);
-                }else{
-                    accept(rows);
-                }
-            });
-        });
+    //LECTURA DE TODOS LOS REGISTROS DE PACIENTES
+    async getAll (){
+        const cursor = this.collection.find({});
+        const documents = await cursor.toArray(); //combierte los datos que recibe en JSON para poder manejarlos con JS
+        return documents;
     }
 
-    getById(id){
-        return new Promise((accept,reject)=>{
-            db.get('SELECT * FROM pacientes WHERE id = ?',[id],(err,row)=>{
-                if(err){
-                    console.error(err);
-                    reject(err);
-                }else{
-                    accept(row);
-                }
-            });
-        });
+    async getFaceted(page,items,filter={}){
+        const cursor = this.collection.find(filter)
+        const totalItems = await cursor.count();
+        cursor.skip((page-1)*items); //Esta funcion skip() recive como parametro la cantidad de elementos que se van a saltar de un arreglo.
+        cursor.limit(items);
+        const rslt = await cursor.toArray();
+        return {
+            totalItems,
+            page,items,
+            totalPages:(Math.ceil(totalItems/items)),
+            rslt};
+
     }
 
-    updateOne(id,nombres,apellidos,identidad,telefono,correo){
-        return new Promise((accept,reject)=>{
-            const sqlUpdate="UPDATE pacientes SET nombres = ?,apellidos = ?, identidad = ?, telefono=?,email=? WHERE id= ?;";
-            db.run(
-                sqlUpdate,
-                [nombres,apellidos,identidad,telefono,correo,id],
-                function(err){
-                    if(err){
-                        console.error(err);
-                        reject(err);
-                    }else{
-                        accept(this);
-                    }
-                }
-            );
-        });
+    async getById(id){
+        const _id = new ObjectId(id);
+        const filter = {_id};
+        const myDocument = await this.collection.findOne(filter);
+        return myDocument;
     }
 
-    deleteOne(id){
-        return new Promise((accept,reject)=>{
-            const sqlDelete =  'DELETE FROM pacientes WHERE id = ?;';
-            db.run(
-                sqlDelete,
-                [id],
-                function(err){
-                    if(err){
-                        reject(err);
-                    }else{
-                        accept(err);
-                    }
-                }
-            )
-        })
+    async updateOne(id,nombres,apellidos,identidad,telefono,correo){
+        const filter = {_id:new ObjectId(id)};
+        const updateCmd = {
+            '$set':{ // $set permite a mongo identificarlo como una actualizacion y no como un reempleazo del documento ya existente
+                nombres,
+                apellidos,
+                identidad,
+                telefono,
+                correo
+            }
+        }
+        const rslt = await this.collection.updateOne(filter,updateCmd);
+        return rslt;
+    }
+
+    async deleteOne(id){
+        const filter = {_id:new ObjectId(id)};
+        const rslt = await this.collection.deleteOne(filter);
+        return rslt;
     }
 }
 

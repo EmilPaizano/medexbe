@@ -35,7 +35,7 @@ router.get("/all", async(req,res)=>{
 router.get("/byid/:id",async(req,res)=>{
     try{
         const {id} = req.params;
-        const result = await expedienteModel.getById(parseInt(id));
+        const result = await expedienteModel.getById(id);
         res.status(200).json({status:"ok",result});
     }catch(ex){
         console.log(ex);
@@ -65,4 +65,39 @@ router.delete("/delete/:id", async(req,res)=>{
         res.status(500).json({status:"failed"})
     }
 });
+
+const allowedItemsNumbers = [10,15,20];
+
+router.get('/facet/:page/:items', async (req,res)=>{
+    const page = parseInt(req.params.page,'10');
+    const items = parseInt(req.params.items,'10');
+
+    if(allowedItemsNumbers.includes(items)){
+        try {
+            const expedientes =  await expedienteModel.getFacet(page,items);
+            res.status(200).json({docs:expedientes})
+        } catch (ex){
+            console.log(ex);
+            res.status(403).json({status:'Not a valid items, only(10,15,20)'});
+        }
+    }
+});
+
+router.get('/byobservation/:observation/:page/:items', async (req,res)=>{
+    const page = parseInt(req.params.page,'10');
+    const items = parseInt(req.params.items,'10');
+    const observation = req.params.observation;
+
+    if(allowedItemsNumbers.includes(items)){
+        try {
+            const expedientes =  await expedienteModel.getFacet(page,items,{"observacion":observation});
+            res.status(200).json({docs:expedientes})
+        } catch (ex){
+            console.log(ex);
+            res.status(403).json({status:'Not a valid items, only(10,15,20)'});
+        }
+    }
+});
+
+
 module.exports = router;

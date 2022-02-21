@@ -24,7 +24,7 @@ router.get("/all",async(req,res)=>{
 router.get('/byid/:id',async(req,res)=>{
     try{
         const { id } = req.params;
-        const row = await pacienteModel.getById(parseInt(id));
+        const row = await pacienteModel.getById(id);
         res.status(200).json({status:"ok",paciente:row});
 
     }catch(ex){
@@ -63,11 +63,48 @@ router.put('/update/:id',async(req,res)=>{
 router.delete('/delete/:id',async(req,res)=>{
     try{
         const {id}= req.params;
-        const result =  await pacienteModel.deleteOne(parseInt(id));
+        const result =  await pacienteModel.deleteOne(id);
         res.status(200).json({status:"ok",result});
     }catch(ex){
         console.log(ex);
         res.status(500).json({status:'failed'});
     }
 })
+
+const allowedItemsNumbers = [10,15,20]
+
+router.get('/facet/:page/:items',async(req,res)=>{
+    const page = parseInt(req.params.page,'10');
+    const items = parseInt(req.params.items,'10');
+
+    if(allowedItemsNumbers.includes(items)){
+        try {
+            const pacientes = await pacienteModel.getFaceted(page,items);
+            res.status(200).json({"docs":pacientes})
+        } catch (ex) {
+            console.log(ex);
+            res.status(500).json({status:"failed"});
+        }
+    }else{
+        res.status(403).json({status:'error',msg:'Not a valid items, only(10,15,20)'})
+    }
+});
+
+router.get('/byname/:name/:page/:items',async(req,res)=>{
+    const page = parseInt(req.params.page,'10');
+    const items = parseInt(req.params.items,'10');
+    const name = req.params.name;
+    if(allowedItemsNumbers.includes(items)){
+        try {
+            const pacientes = await pacienteModel.getFaceted(page,items,{nombres:name});
+            res.status(200).json({"docs":pacientes})
+        } catch (ex) {
+            console.log(ex);
+            res.status(500).json({status:"failed"});
+        }
+    }else{
+        res.status(403).json({status:'error',msg:'Not a valid items, only(10,15,20)'})
+    }
+});
+
 module.exports = router;

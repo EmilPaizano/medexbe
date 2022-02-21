@@ -1,14 +1,17 @@
-const getDb = require("../db");
+
+const ObjectId = require('mongodb').ObjectId;
+const getDb = require("../mongodb");
 let db =  null;
 
 class Expedientes{
+    collection = null;
     constructor(){
         getDb()
         .then((database)=>{
             db = database;
-            if(process.env.MIGRATE === "true"){
-                const createStatement = "CREATE TABLE IF NOT EXISTS expedientes(id INTEGER PRIMARY KEY AUTOINCREMENT,identidad TEXT,fecha TEXT, descripcion TEXT, observacion TEXT, registro TEXT,ultimaActualizacion TEXT);";
-                db.run(createStatement);
+            this.collection = db.collection("Expedientes");
+            if(process.env.MIGRATE = "true"){
+                //por si se reqioere algo
             }
         })
         .catch((err)=>{
@@ -16,83 +19,67 @@ class Expedientes{
         })
     }
 
-    new (identidad,fecha,descripcion,observacion,registro, ultimaActualizacion){
-        return new Promise((accept,reject)=>{
-            db.run(
-                'INSERT INTO expedientes(identidad,fecha,descripcion,observacion,registro,ultimaActualizacion) VALUES(?,?,?,?,?,?);',
-                [identidad,fecha,descripcion,observacion,registro, ultimaActualizacion],
-                (err,rslt)=>{
-                    if(err){
-                        console.error(err);
-                        reject(err);
-                    }else{
-                        accept(rslt);
-                    }
-                }
-            );
-        });
+    async new(identidad,fecha,descripcion,observacion,registro, ultimaActualizacion){
+        const newExpediente = {
+            identidad,
+            fecha,
+            descripcion,
+            observacion,
+            registro,
+            ultimaActualizacion
+        }
+        const rslt = await this.collection.insertOne(newExpediente)
+    }
+        
+    async getAll(){
+        const cursor =  this.collection.find({});
+        const documents = await cursor.toArray();
+        return documents;
     }
 
-    getAll(){
-        return new Promise((accept,reject)=>{
-            db.all('SELECT * FROM expedientes',(err,rslt)=>{
-                if(err){
-                    console.error(err);
-                    reject(err);
-                }else{
-                    accept(rslt);
-                }
-            });
-        });
+    async getFacet(page,items,filter={}){
+        const cursor = this.collection.find(filter);
+        const totalItems = await cursor.count();
+        cursor.skip((page-1)*items);
+        cursor.limit(items);
+        const rslt = await cursor.toArray();
+        return {
+            totalItems,
+            page,
+            items,
+            totalPages:(Math.ceil(totalItems/items)),
+            rslt
+        } 
     }
 
-    getById(id){
-        return new Promise((accept,reject)=>{
-            db.get("SELECT * FROM expedientes WHERE id = ?",
-            [id],
-            (err,row)=>{
-                if(err){
-                    console.error(err);
-                    reject(err);
-                }else{
-                    accept(row);
-                }
-            });
-        });
+    async getById(id){
+        const _id = new ObjectId(id);
+        const filter = {_id};
+        const myDocument = await this.collection.findOne(filter);
+        return myDocument;
     }
 
-    updateOne(id,identidad,fecha,descripcion,observacion,registro, ultimaActualizacion){
-        return new Promise((accept,reject)=>{
-            const sqlUpdate="UPDATE expedientes SET identidad = ?,fecha = ?,descripcion = ? ,observacion = ?,registro = ?, ultimaActualizacion = ? WHERE id = ?;";
-            db.run(sqlUpdate,
-                [identidad,fecha,descripcion,observacion,registro, ultimaActualizacion,id],
-                (err,rslt)=>{
-                    if(err){
-                        console.error(err);
-                        reject(err);
-                    }else{
-                        accept(rslt);
-                    }
-            });
-        });
+    async updateOne(id,identidad,fecha,descripcion,observacion,registro, ultimaActualizacion){
+        const filter ={_id:new ObjectId(id)};
+        const updateCmd = {
+            '$set':{
+                identidad,
+                fecha,
+                descripcion,
+                observacion,
+                registro, 
+                ultimaActualizacion
+            }
+        }
+        const rslt =  await this.collection.updateOne(filter,updateCmd);
+        return rslt;
     }
 
-    deleteOne(id){
-        return new Promise((accept,reject)=>{
-            const sqlDelete = 'DELETE FROM expedientes WHERE id=?';
-            db.run(
-                sqlDelete,
-                [id],
-                (err,rslt)=>{
-                    if(err){
-                        console.log(err);
-                        reject(err);
-                    }else{
-                        accept(rslt);
-                    }
-                }
-            );
-        });
+    async deleteOne(id){
+        const filter = {_id: new ObjectId(id)};
+        const rslt = await this.collection.deleteOne(filter);
+        return rslt;
+
     }
 }
 
