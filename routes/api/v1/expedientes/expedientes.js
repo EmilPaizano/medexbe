@@ -100,4 +100,50 @@ router.get('/byobservation/:observation/:page/:items', async (req,res)=>{
 });
 
 
+router.put('/addtag/:id', async (req, res) => {
+    try {
+      const { tag } = req.body;
+      const { id } = req.params;
+      const result = await expedienteModel.updateAddTag(id, tag);
+      res.status(200).json({
+        status: 'ok',
+        result
+      });
+    } catch (ex) {
+      console.log(ex);
+      res.status(500).json({ status: 'failed' });
+    }
+
+});
+
+router.put('/addtagset/:id', async (req, res) => {
+    try {
+      const { tag } = req.body;
+      const { id } = req.params;
+      const result = await expedienteModel.updateAddTagSet(id, tag);
+      res.status(200).json({
+        status: 'ok',
+        result
+      });
+    } catch (ex) {
+      console.log(ex);
+      res.status(500).json({ status: 'failed' });
+    }
+  });
+  
+  router.put('/removetag/:id', async (req, res) => {
+    try {
+      const { tag } = req.body;
+      const { id } = req.params;
+      const result = await expedienteModel.updatePopTag(id, tag);
+      res.status(200).json({
+        status: 'ok',
+        result
+      });
+    } catch (ex) {
+      console.log(ex);
+      res.status(500).json({ status: 'failed' });
+    }
+  });
+
 module.exports = router;

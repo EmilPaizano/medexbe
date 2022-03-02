@@ -78,6 +78,37 @@ class Pacientes {
         const rslt = await this.collection.deleteOne(filter);
         return rslt;
     }
+
+    async updateAddTag(id, tagEntry){
+        const updateCmd = {
+          "$push": {
+            tags: tagEntry
+          }
+        }
+        const filter = {_id: new ObjectId(id)};
+        return await this.collection.updateOne(filter, updateCmd);
+      }
+
+    async updateAddTagSet(id, tagEntry) {
+        const updateCmd = {
+          "$addToSet": {
+            tags: tagEntry
+          }
+        }
+        const filter = { _id: new ObjectId(id) };
+        return await this.collection.updateOne(filter, updateCmd);
+    }
+
+    async updatePopTag(id){
+        const deleteCmd = {
+            "$unset":{
+                "tags":""
+            }
+        }
+        const filter = {"_id":new ObjectId(id)}
+        const rslt = await this.collection.updateOne(filter,deleteCmd);
+        return rslt;
+    }
 }
 
 

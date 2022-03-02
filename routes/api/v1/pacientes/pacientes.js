@@ -13,6 +13,7 @@ router.get('/',(req,res)=>{
 
 router.get("/all",async(req,res)=>{
     try{
+        console.log("User request",req.user)
         const rows = await pacienteModel.getAll();
         res.status(200).json({status:"ok",pacientes:rows});
     }catch(Ex){
@@ -107,4 +108,50 @@ router.get('/byname/:name/:page/:items',async(req,res)=>{
     }
 });
 
+
+router.put('/addtag/:id', async (req, res) => {
+    try {
+      const { tag } = req.body;
+      const { id } = req.params;
+      const result = await pacienteModel.updateAddTag(id, tag);
+      res.status(200).json({
+        status: 'ok',
+        result
+      });
+    } catch (ex) {
+      console.log(ex);
+      res.status(500).json({ status: 'failed' });
+    }
+
+});
+
+router.put('/addtagset/:id', async (req, res) => {
+    try {
+      const { tag } = req.body;
+      const { id } = req.params;
+      const result = await pacienteModel.updateAddTagSet(id, tag);
+      res.status(200).json({
+        status: 'ok',
+        result
+      });
+    } catch (ex) {
+      console.log(ex);
+      res.status(500).json({ status: 'failed' });
+    }
+  });
+  
+  router.put('/removetag/:id', async (req, res) => {
+    try {
+      const { tag } = req.body;
+      const { id } = req.params;
+      const result = await pacienteModel.updatePopTag(id, tag);
+      res.status(200).json({
+        status: 'ok',
+        result
+      });
+    } catch (ex) {
+      console.log(ex);
+      res.status(500).json({ status: 'failed' });
+    }
+  });
 module.exports = router;
